@@ -1,0 +1,31 @@
+name: Build Zombie Survival APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "zombie_mobile.py"
+      - "buildozer.spec"
+      - ".github/workflows/android.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build APK
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          workdir: .
+          buildozer_version: stable
+          command: buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZombieSurvival-APK
+          path: ${{ steps.buildozer.outputs.filename }}
