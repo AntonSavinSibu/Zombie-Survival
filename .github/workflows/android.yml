@@ -2,6 +2,7 @@ name: Build Zombie Survival APK
 
 on:
   workflow_dispatch:
+
   push:
     paths:
       - "zombie_mobile.py"
@@ -23,7 +24,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -44,6 +45,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer setuptools cython==0.29.34
 
+      - name: Accept Android SDK licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager \
+            "platform-tools" \
+            "build-tools;35.0.0" \
+            "platforms;android-35"
+
       - name: Build APK
         run: |
           buildozer -v android debug
@@ -53,3 +65,4 @@ jobs:
         with:
           name: ZombieSurvival-APK
           path: bin/*.apk
+          
