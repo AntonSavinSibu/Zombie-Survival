@@ -2,7 +2,6 @@ name: Build Zombie Survival APK
 
 on:
   workflow_dispatch:
-
   push:
     paths:
       - "zombie_mobile.py"
@@ -13,6 +12,7 @@ jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -21,10 +21,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
@@ -33,30 +33,32 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            git zip unzip \
-            autoconf automake libtool \
-            pkg-config zlib1g-dev \
-            libncurses5-dev libncursesw5-dev \
+            git zip unzip openjdk-17-jdk \
+            autoconf automake libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
             cmake libffi-dev libssl-dev \
-            build-essential
+            build-essential libltdl-dev \
+            python3-pip python3-setuptools
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            .buildozer
+            ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
 
-      - name: Accept Android SDK licenses
-        run: |
-          yes | sdkmanager --licenses || true
-
-      - name: Install Android SDK components
-        run: |
-          sdkmanager "platform-tools" "build-tools;35.0.0" "platforms;android-35"
-
-      - name: Install Buildozer
+      - name: Install Buildozer + dependencies
         run: |
           python -m pip install --upgrade pip
           pip install buildozer setuptools cython==0.29.34
 
       - name: Build APK
+        env:
+          APP_ANDROID_ACCEPT_SDK_LICENSE: "1"
+          BUILDOZER_WARN_ON_ROOT: "0"
         run: |
           buildozer -v android debug
 
@@ -65,4 +67,4 @@ jobs:
         with:
           name: ZombieSurvival-APK
           path: bin/*.apk
-        
+          if-no-files-found: error
